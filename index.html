@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>克隆语音实验一 | 语音配对判断</title>
+    <title>克隆语音配对实验</title>
     <style>
         * {
             box-sizing: border-box;
@@ -28,7 +28,6 @@
             box-shadow: 0 20px 35px -12px rgba(0,0,0,0.2);
             width: 700px;
             max-width: 95%;
-            backdrop-filter: blur(2px);
             transition: all 0.2s;
         }
 
@@ -73,7 +72,6 @@
             box-shadow: 0 6px 12px rgba(0,0,0,0.1);
         }
 
-        /* 喇叭卡片容器 */
         .audio-container {
             display: flex;
             justify-content: space-around;
@@ -128,11 +126,11 @@
         }
         
         .played-badge {
-            font-size: 13px;
+            font-size: 12px;
             background: #2c7da0;
             color: white;
             border-radius: 40px;
-            padding: 4px 12px;
+            padding: 4px 10px;
             display: inline-block;
             margin-top: 8px;
             font-weight: 500;
@@ -152,9 +150,9 @@
         
         .status-badge {
             display: inline-block;
-            padding: 8px 24px;
+            padding: 6px 20px;
             border-radius: 40px;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 600;
             margin: 16px 0 6px;
             transition: all 0.2s;
@@ -179,24 +177,25 @@
         }
         
         .guidance-text {
-            font-size: 14px;
+            font-size: 13px;
             color: #475569;
             background: #f1f5f9;
             display: inline-block;
-            padding: 6px 18px;
+            padding: 4px 16px;
             border-radius: 30px;
-            margin-top: 8px;
+            margin-top: 6px;
         }
         
         #feedback {
-            margin-top: 16px;
+            margin-top: 12px;
             font-weight: 500;
             color: #0f3b2c;
             background: #e6f7ec;
-            padding: 6px 12px;
+            padding: 5px 12px;
             border-radius: 60px;
             display: inline-block;
             font-size: 13px;
+            min-width: 160px;
         }
         
         .trial-counter {
@@ -216,13 +215,17 @@
             height: 1px;
             background: linear-gradient(to right, transparent, #cbd5e1, transparent);
         }
+        .small-note {
+            font-size: 11px;
+            color: #6c757d;
+        }
     </style>
 </head>
 <body>
     <div id="app"></div>
 
 <script>
-    // ================= 实验数据 (严格36行) =================
+    // ================= 实验数据 (36对) =================
     const trials = [
         { left: "other/low-ideal (5).wav", right: "self/low-ideal (4).wav" },
         { left: "self/high-true (10).wav", right: "self/low-true (1).wav" },
@@ -262,22 +265,19 @@
         { left: "other/high-true (7).wav", right: "other/high-ideal (1).wav" }
     ];
 
-    // ---------- 全局变量 ----------
     let currentTrialIndex = 0;
     let results = [];
-    let audioCache = {};          // 预加载音频对象
-    let currentTrialState = null; // 当前试次状态 { leftPlayed, rightPlayed, responseEnabled, leftPath, rightPath ... }
-    let audioEndedHandlers = new Map();   // 存储每个audio的ended回调引用，便于清理
-    
+    let audioCache = {};
+    let currentTrialState = null;
+    let audioEndedHandlers = new Map();
     const app = document.getElementById('app');
     let globalKeyHandler = null;
     
-    // ========== 工具 & 初始化 ==========
     window.onload = function() {
         const savedData = localStorage.getItem('exp1_results');
         const savedIndex = localStorage.getItem('exp1_currentIndex');
         if (savedData && savedIndex) {
-            if(confirm("检测到未完成的实验数据，是否从中断处继续？\n点击“取消”将重新开始。")) {
+            if(confirm("检测到未完成数据，是否继续？\n“取消”将重新开始。")) {
                 results = JSON.parse(savedData);
                 currentTrialIndex = parseInt(savedIndex);
             } else {
@@ -288,28 +288,20 @@
         showWelcomeScreen();
     };
     
-    // 欢迎界面 + 预加载
     function showWelcomeScreen() {
         app.innerHTML = `
-            <h1>🎧 克隆语音实验一</h1>
-            <div class="sub">听觉同异性判断任务</div>
-            <p>您将依次听到若干对语音片段。<br>
-               任务：判断每一对中的<strong>两段语音是否来自同一个人</strong>。<br><br>
-               <strong>⚠️ 核心规则：</strong><br>
-               • 每段语音<strong>只能播放一次</strong>，不可重听。<br>
-               • 请依次点击两侧喇叭 🔊，听完两个音频（各一次）。<br>
-               • 两个音频都<strong>播放完毕</strong>后，按 <kbd style="background:#eee;padding:2px 6px;border-radius:20px;">F</kbd> (同一人) 或 <kbd style="background:#eee;padding:2px 6px;border-radius:20px;">J</kbd> (不同人)。<br>
-               • 未听完两个音频前，按键无效。<br>
-               🎯 请专注，实验过程中无法重听任何一段。
-            </p>
-            <button id="startBtn" class="btn" disabled>📀 加载音频中... (0/?)</button>
+            <h1>🎧 克隆语音配对实验</h1>
+            <div class="sub">单次播放 · 不可重听</div>
+            <p>每对语音中，<strong>每个音频只能播放一次</strong>。<br>
+               请依次点击喇叭 🔊 听完两段，然后按 <kbd>F</kbd> (同一人) 或 <kbd>J</kbd> (不同人)。</p>
+            <button id="startBtn" class="btn" disabled>📀 加载音频中...</button>
         `;
         const startBtn = document.getElementById('startBtn');
-        preloadAudio((current, total) => {
-            startBtn.innerText = `📀 加载音频中... (${current}/${total})`;
+        preloadAudio((cur, total) => {
+            startBtn.innerText = `📀 加载中 ${cur}/${total}`;
         }).then(() => {
             startBtn.disabled = false;
-            startBtn.innerText = "✅ 加载完成，按 空格键 或 点击开始实验";
+            startBtn.innerText = "✅ 开始实验 (空格键)";
             startBtn.focus();
         });
         startBtn.onclick = startExperiment;
@@ -324,7 +316,6 @@
         }
     }
     
-    // 预加载所有独立音频文件
     function preloadAudio(onProgress) {
         const allPaths = new Set();
         trials.forEach(t => {
@@ -332,7 +323,7 @@
             allPaths.add(t.right);
         });
         const total = allPaths.size;
-        let loadedCount = 0;
+        let loaded = 0;
         const promises = [];
         allPaths.forEach(path => {
             const p = new Promise((resolve) => {
@@ -340,14 +331,14 @@
                 audio.src = encodeURI(path);
                 audio.preload = "auto";
                 audio.oncanplaythrough = () => {
-                    loadedCount++;
-                    onProgress(loadedCount, total);
+                    loaded++;
+                    onProgress(loaded, total);
                     resolve();
                 };
                 audio.onerror = () => {
-                    console.warn(`⚠️ 预加载警告: ${path} 可能不存在，但实验会尝试播放。`);
-                    loadedCount++;
-                    onProgress(loadedCount, total);
+                    console.warn(`⚠️ 加载失败: ${path}`);
+                    loaded++;
+                    onProgress(loaded, total);
                     resolve();
                 };
                 audio.load();
@@ -360,7 +351,6 @@
     
     function startExperiment() {
         document.removeEventListener('keydown', handleWelcomeKey);
-        // 全局键盘监听
         if (globalKeyHandler) document.removeEventListener('keydown', globalKeyHandler);
         globalKeyHandler = handleGlobalKey;
         document.addEventListener('keydown', globalKeyHandler);
@@ -374,12 +364,10 @@
         }
     }
     
-    // 清理当前试次遗留的音频事件监听 & 停止所有正在播放的音频
     function cleanupTrialAudioListeners() {
         if (!currentTrialState) return;
         const { leftPath, rightPath } = currentTrialState;
-        const pathsToCheck = [leftPath, rightPath];
-        pathsToCheck.forEach(path => {
+        [leftPath, rightPath].forEach(path => {
             const audio = audioCache[path];
             if (audio && audioEndedHandlers.has(audio)) {
                 const handler = audioEndedHandlers.get(audio);
@@ -393,21 +381,18 @@
         });
     }
     
-    // 更新喇叭UI (启用/禁用样式 + 已播放标识)
     function updateSpeakersUI() {
         if (!currentTrialState) return;
         const leftIcon = document.querySelector('[data-audio="left"]');
         const rightIcon = document.querySelector('[data-audio="right"]');
-        const leftPlayedBadge = document.getElementById('leftPlayedBadge');
-        const rightPlayedBadge = document.getElementById('rightPlayedBadge');
-        
+        const leftBadge = document.getElementById('leftPlayedBadge');
+        const rightBadge = document.getElementById('rightPlayedBadge');
         const leftPlayed = currentTrialState.leftPlayed;
         const rightPlayed = currentTrialState.rightPlayed;
-        const responseEnabled = currentTrialState.responseEnabled;
+        const respEnabled = currentTrialState.responseEnabled;
         
-        // 左侧喇叭样式
         if (leftIcon) {
-            if (responseEnabled || leftPlayed) {
+            if (respEnabled || leftPlayed) {
                 leftIcon.classList.add('disabled-speaker');
                 leftIcon.style.pointerEvents = 'none';
             } else {
@@ -416,7 +401,7 @@
             }
         }
         if (rightIcon) {
-            if (responseEnabled || rightPlayed) {
+            if (respEnabled || rightPlayed) {
                 rightIcon.classList.add('disabled-speaker');
                 rightIcon.style.pointerEvents = 'none';
             } else {
@@ -424,115 +409,74 @@
                 rightIcon.style.pointerEvents = 'auto';
             }
         }
-        
-        // 显示已播放角标
-        if (leftPlayedBadge) leftPlayedBadge.style.display = leftPlayed ? 'inline-block' : 'none';
-        if (rightPlayedBadge) rightPlayedBadge.style.display = rightPlayed ? 'inline-block' : 'none';
+        if (leftBadge) leftBadge.style.display = leftPlayed ? 'inline-block' : 'none';
+        if (rightBadge) rightBadge.style.display = rightPlayed ? 'inline-block' : 'none';
     }
     
-    // 启用按键响应（两个音频都成功播放完毕后调用）
     function enableResponse() {
-        if (!currentTrialState) return;
-        if (currentTrialState.responseEnabled) return;
-        // 再次确保两个都已播放且未被启用
+        if (!currentTrialState || currentTrialState.responseEnabled) return;
         if (currentTrialState.leftPlayed && currentTrialState.rightPlayed) {
             currentTrialState.responseEnabled = true;
             currentTrialState.responseStartTime = Date.now();
-            updateStatusUI(true);
-            // 彻底禁用所有喇叭点击（通过UI禁用）
-            updateSpeakersUI();
+            const statusDiv = document.getElementById('statusIndicator');
+            if (statusDiv) {
+                statusDiv.className = "status-badge status-ready";
+                statusDiv.innerHTML = "✅ 可按键 | F(同) J(异)";
+            }
             const fb = document.getElementById('feedback');
-            if (fb) fb.innerHTML = "✅ 两个音频已播放完毕，请按键 (F / J)";
+            if (fb) fb.innerHTML = "🎧 请按 F 或 J";
+            updateSpeakersUI();
         }
     }
     
-    function updateStatusUI(enabled) {
-        const statusDiv = document.getElementById('statusIndicator');
-        const guidanceSpan = document.getElementById('guidanceText');
-        if (!statusDiv) return;
-        if (enabled) {
-            statusDiv.className = "status-badge status-ready";
-            statusDiv.innerHTML = "🎧 可以按键 → F(同一人) / J(不同人)";
-            if (guidanceSpan) guidanceSpan.innerHTML = "⌨️ 请按 F 或 J 做出判断";
-        } else {
-            statusDiv.className = "status-badge status-wait";
-            statusDiv.innerHTML = "⏳ 请依次播放两个音频 (每个仅一次)";
-            if (guidanceSpan) guidanceSpan.innerHTML = "🔊 点击未播放的喇叭 🔊 每个只能听一次";
-        }
-    }
-    
-    // 核心播放逻辑：每个音频仅允许播放一次，且必须在response启用前且未播放过
     async function playAudioWithTracking(side, path) {
         if (!currentTrialState) return;
-        // 已经完成按键响应，禁止播放
         if (currentTrialState.responseEnabled) {
-            const fb = document.getElementById('feedback');
-            if (fb) fb.innerHTML = "⛔ 本试次已完成，请按键提交结果";
+            document.getElementById('feedback').innerHTML = "⏳ 请按键提交";
             return;
         }
-        
-        // 判断该侧是否已经播放过
         const isLeft = (side === 'left');
         if (isLeft && currentTrialState.leftPlayed) {
-            const fb = document.getElementById('feedback');
-            if (fb) fb.innerHTML = "⚠️ 左侧音频只能播放一次，不能再听";
+            document.getElementById('feedback').innerHTML = "⚠️ 左侧已播放过";
             return;
         }
         if (!isLeft && currentTrialState.rightPlayed) {
-            const fb = document.getElementById('feedback');
-            if (fb) fb.innerHTML = "⚠️ 右侧音频只能播放一次，不能再听";
+            document.getElementById('feedback').innerHTML = "⚠️ 右侧已播放过";
             return;
         }
         
         const audio = audioCache[path];
         if (!audio) {
-            console.error("音频缺失:", path);
-            const fb = document.getElementById('feedback');
-            if (fb) fb.innerHTML = "❌ 音频文件缺失，请联系实验者";
+            document.getElementById('feedback').innerHTML = "❌ 音频缺失";
             return;
         }
-        
-        // 如果正在播放，不允许重播（避免重复触发）
         if (!audio.paused) {
-            const fb = document.getElementById('feedback');
-            if (fb) fb.innerHTML = "⏳ 音频正在播放，请等待结束";
+            document.getElementById('feedback').innerHTML = "⏳ 播放中";
             return;
         }
         
-        // 标记为“已播放”（立即锁定图标，防止二次点击）
-        if (isLeft) {
-            currentTrialState.leftPlayed = true;
-        } else {
-            currentTrialState.rightPlayed = true;
-        }
-        updateSpeakersUI();  // 立刻禁用该侧喇叭
+        // 锁定该侧
+        if (isLeft) currentTrialState.leftPlayed = true;
+        else currentTrialState.rightPlayed = true;
+        updateSpeakersUI();
+        document.getElementById('feedback').innerHTML = `🔊 播放${isLeft ? '左' : '右'}侧`;
         
-        // 清理旧的ended事件避免重复
         if (audioEndedHandlers.has(audio)) {
-            const oldHandler = audioEndedHandlers.get(audio);
-            audio.removeEventListener('ended', oldHandler);
+            const old = audioEndedHandlers.get(audio);
+            audio.removeEventListener('ended', old);
             audioEndedHandlers.delete(audio);
         }
         
-        // 播放结束处理器
         const endedHandler = () => {
             if (!currentTrialState) return;
-            // 检查两个是否都已经播放完毕
             const leftDone = currentTrialState.leftPlayed;
             const rightDone = currentTrialState.rightPlayed;
-            
             if (leftDone && rightDone && !currentTrialState.responseEnabled) {
-                // 两个都播放过 → 启用按键
                 enableResponse();
             } else {
-                // 尚未两个都完成，更新提示
-                const fb = document.getElementById('feedback');
-                if (fb && !currentTrialState.responseEnabled) {
-                    const remain = (!leftDone ? "左侧" : "") + (!leftDone && !rightDone ? "和" : "") + (!rightDone ? "右侧" : "");
-                    fb.innerHTML = `🔊 请播放 ${remain} 音频 (每个只能一次)`;
-                }
+                const remain = !leftDone ? "左侧" : (!rightDone ? "右侧" : "");
+                if (remain) document.getElementById('feedback').innerHTML = `🔊 请播${remain}`;
             }
-            // 移除自身的ended监听，避免残留
             audio.removeEventListener('ended', endedHandler);
             audioEndedHandlers.delete(audio);
         };
@@ -540,145 +484,104 @@
         audioEndedHandlers.set(audio, endedHandler);
         audio.addEventListener('ended', endedHandler);
         
-        // 开始播放，若出错则回滚播放标记
         try {
             audio.currentTime = 0;
             await audio.play();
-            // 播放正常开始
-            const fb = document.getElementById('feedback');
-            if (fb) fb.innerHTML = `🎵 正在播放 ${isLeft ? '左侧' : '右侧'} 音频...`;
         } catch (err) {
-            console.error(`播放失败 ${path}:`, err);
-            // 播放失败，回滚标记让用户可重试
-            if (isLeft) {
-                currentTrialState.leftPlayed = false;
-            } else {
-                currentTrialState.rightPlayed = false;
-            }
+            console.error(err);
+            if (isLeft) currentTrialState.leftPlayed = false;
+            else currentTrialState.rightPlayed = false;
             updateSpeakersUI();
-            const fb = document.getElementById('feedback');
-            if (fb) fb.innerHTML = "❌ 播放失败，请重试点击喇叭";
-            // 移除刚才添加的监听
+            document.getElementById('feedback').innerHTML = "❌ 播放失败，重试";
             audio.removeEventListener('ended', endedHandler);
             audioEndedHandlers.delete(audio);
         }
     }
     
-    // 响应F/J键
     function handleResponse(key) {
-        if (!currentTrialState) return;
-        if (!currentTrialState.responseEnabled) {
+        if (!currentTrialState || !currentTrialState.responseEnabled) {
             const fb = document.getElementById('feedback');
-            if (!currentTrialState.leftPlayed || !currentTrialState.rightPlayed) {
-                fb.innerHTML = "⛔ 请先播放两个音频（每个仅一次）";
-            } else {
-                fb.innerHTML = "⏳ 请等待音频播放结束再按键";
-            }
-            const statusDiv = document.getElementById('statusIndicator');
-            if (statusDiv) {
-                statusDiv.style.transform = "scale(1.02)";
-                setTimeout(() => { if(statusDiv) statusDiv.style.transform = ""; }, 200);
-            }
+            if (!currentTrialState?.leftPlayed || !currentTrialState?.rightPlayed)
+                fb.innerHTML = "❌ 请先播放两个音频";
+            else fb.innerHTML = "⏳ 等待音频结束";
             return;
         }
         
-        const reactionTime = Date.now() - currentTrialState.responseStartTime;
+        const rt = Date.now() - currentTrialState.responseStartTime;
         const trial = trials[currentTrialIndex];
         results.push({
             trial: currentTrialIndex + 1,
             audioA: trial.left,
             audioB: trial.right,
             response: key,
-            rt: reactionTime,
-            note: "单次播放限制 | 双音频各播放一次"
+            rt: rt,
+            note: "单次播放限制"
         });
-        
-        // 保存进度
         localStorage.setItem('exp1_results', JSON.stringify(results));
         localStorage.setItem('exp1_currentIndex', currentTrialIndex);
+        document.getElementById('feedback').innerHTML = `✓ 已记录 (${rt}ms)`;
         
-        const feedbackEl = document.getElementById('feedback');
-        if (feedbackEl) feedbackEl.innerText = `✓ 已记录 (${reactionTime}ms) 进入下一试次...`;
-        
-        // 暂时移除全局键盘监听，防止连按
         if (globalKeyHandler) document.removeEventListener('keydown', globalKeyHandler);
-        
-        // 清理当前试次音频（停止播放并移除监听）
         cleanupTrialAudioListeners();
         
         setTimeout(() => {
             currentTrialIndex++;
-            // 重新挂载键盘监听
             if (globalKeyHandler) document.addEventListener('keydown', globalKeyHandler);
             renderTrial();
-        }, 700);
+        }, 600);
     }
     
-    // 渲染单个试次
     function renderTrial() {
         if (currentTrialIndex >= trials.length) {
             endExperiment();
             return;
         }
-        
-        // 清理旧试次残余事件 & 停播
-        if (currentTrialState) {
-            cleanupTrialAudioListeners();
-        }
+        if (currentTrialState) cleanupTrialAudioListeners();
         
         const trial = trials[currentTrialIndex];
-        // 初始化当前试次状态 (每个音频只能播放一次)
         currentTrialState = {
-            trialIndex: currentTrialIndex,
             leftPath: trial.left,
             rightPath: trial.right,
             leftPlayed: false,
             rightPlayed: false,
             responseEnabled: false,
-            responseStartTime: 0,
+            responseStartTime: 0
         };
         
         app.innerHTML = `
-            <div class="trial-counter">🔊 试次 ${currentTrialIndex + 1} / ${trials.length}</div>
+            <div class="trial-counter">📌 ${currentTrialIndex+1} / ${trials.length}</div>
             <div class="audio-container">
                 <div class="audio-card">
                     <div class="speaker-icon" data-audio="left">🔊</div>
-                    <p><strong>语音 A</strong></p>
-                    <span id="leftPlayedBadge" class="played-badge" style="display:none;">✓ 已播放</span>
+                    <p>A</p>
+                    <span id="leftPlayedBadge" class="played-badge" style="display:none;">✓</span>
                 </div>
                 <div class="vs-divider">VS</div>
                 <div class="audio-card">
                     <div class="speaker-icon" data-audio="right">🔊</div>
-                    <p><strong>语音 B</strong></p>
-                    <span id="rightPlayedBadge" class="played-badge" style="display:none;">✓ 已播放</span>
+                    <p>B</p>
+                    <span id="rightPlayedBadge" class="played-badge" style="display:none;">✓</span>
                 </div>
             </div>
-            <div id="statusIndicator" class="status-badge status-wait">⏳ 每个音频仅能播放一次</div>
-            <div class="guidance-text" id="guidanceText">🔊 点击喇叭播放（每个仅一次），两个都听完后按F/J</div>
+            <div id="statusIndicator" class="status-badge status-wait">⏳ 每个音频仅一次</div>
+            <div class="guidance-text">🔊 点击喇叭 → 听完后按 F/J</div>
             <div id="feedback"></div>
             <hr />
-            <div style="font-size:12px; color:#6c757d;">⚠️ 每个音频只能播放一次，无法重听</div>
+            <div class="small-note">⚠️ 每个音频只能播放一次，无法重听</div>
         `;
         
-        // 绑定点击事件
         const leftIcon = document.querySelector('[data-audio="left"]');
         const rightIcon = document.querySelector('[data-audio="right"]');
-        if (leftIcon) {
-            leftIcon.onclick = (e) => {
-                e.stopPropagation();
-                playAudioWithTracking('left', currentTrialState.leftPath);
-            };
-        }
-        if (rightIcon) {
-            rightIcon.onclick = (e) => {
-                e.stopPropagation();
-                playAudioWithTracking('right', currentTrialState.rightPath);
-            };
-        }
+        if (leftIcon) leftIcon.onclick = () => playAudioWithTracking('left', currentTrialState.leftPath);
+        if (rightIcon) rightIcon.onclick = () => playAudioWithTracking('right', currentTrialState.rightPath);
         
-        // 初始化UI状态
         updateSpeakersUI();
-        updateStatusUI(false);
+        const statusDiv = document.getElementById('statusIndicator');
+        if (statusDiv) {
+            statusDiv.className = "status-badge status-wait";
+            statusDiv.innerHTML = "⏳ 每个音频仅一次";
+        }
+        document.getElementById('feedback').innerHTML = "";
     }
     
     function endExperiment() {
@@ -686,11 +589,11 @@
         if (globalKeyHandler) document.removeEventListener('keydown', globalKeyHandler);
         app.innerHTML = `
             <h1>🎉 实验完成</h1>
-            <p>感谢您的认真参与！数据已记录。</p>
-            <button class="btn" id="downloadCsvBtn">📥 下载实验数据 (CSV)</button>
-            <button class="btn" id="restartBtn" style="background:#6c757d;">🔄 重新开始</button>
+            <p>感谢参与！数据已保存。</p>
+            <button class="btn" id="downloadBtn">📥 下载CSV</button>
+            <button class="btn" id="restartBtn" style="background:#6c757d;">🔄 重来</button>
         `;
-        document.getElementById('downloadCsvBtn')?.addEventListener('click', downloadCSV);
+        document.getElementById('downloadBtn')?.addEventListener('click', downloadCSV);
         document.getElementById('restartBtn')?.addEventListener('click', () => {
             localStorage.clear();
             location.reload();
@@ -700,18 +603,14 @@
     }
     
     function downloadCSV() {
-        let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
-        csvContent += "试次,音频A路径,音频B路径,按键反应,反应时(ms),备注\n";
-        results.forEach(row => {
-            csvContent += `${row.trial},"${row.audioA}","${row.audioB}",${row.response},${row.rt},${row.note || ""}\n`;
+        let csv = "data:text/csv;charset=utf-8,\uFEFF试次,音频A,音频B,按键,反应时(ms),备注\n";
+        results.forEach(r => {
+            csv += `${r.trial},"${r.audioA}","${r.audioB}",${r.response},${r.rt},${r.note}\n`;
         });
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "实验1_语音匹配_单次播放数据.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const a = document.createElement('a');
+        a.href = encodeURI(csv);
+        a.download = "语音实验_单次播放.csv";
+        a.click();
     }
 </script>
 </body>
