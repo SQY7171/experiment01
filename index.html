@@ -337,12 +337,20 @@
         }
         
         // 如果已经可以按键，再点击喇叭则重置响应状态（因为最后播放的音频变了）
-        if (currentTrialState.responseEnabled === true) {
+        // 如果已经可以按键，再点击喇叭则重置响应状态（因为最后播放的音频变了）
+if (currentTrialState.responseEnabled === true) {
     currentTrialState.responseEnabled = false;
     currentTrialState.alreadyEnabledForThisTrial = false;
-    // 👇 新增这一行：重置计时起点
+    
+    // 👇 新增：重置计时起点
     currentTrialState.responseStartTime = 0; 
     
+    // 👇 新增：清空已播放记录（这是解决你问题的核心）
+    currentTrialState.playedAudiosSet.clear(); 
+    
+    // 👇 新增：重置播放顺序
+    currentTrialState.playOrder = []; 
+
     updateStatusUI(false);
     const fb = document.getElementById('feedback');
     if (fb) fb.innerHTML = "重新播放，请等待音频结束";
