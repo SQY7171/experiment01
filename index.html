@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>语音配对实验 | 单次播放</title>
+    <title>克隆语音配对实验一</title>
     <style>
         * {
             box-sizing: border-box;
@@ -290,10 +290,17 @@
     
     function showWelcomeScreen() {
         app.innerHTML = `
-            <h1>🎧 语音配对实验</h1>
+            <h1>🎧 克隆语音配对实验一</h1>
             <div class="sub">单次播放 · 不可重听</div>
-            <p>每对语音中，<strong>每个音频只能播放一次</strong>。<br>
-               请依次点击喇叭 🔊 听完两段，然后按 <kbd>F</kbd> (同一人) 或 <kbd>J</kbd> (不同人)。</p>
+            <p>接下来，您将依次听到若干对语音片段。<br>
+             每对语音中，<strong>每个音频只能播放一次</strong>。<br>
+               您的任务是判断每一对中的两段语音是否来自同一个人。<br><br>
+               <strong>操作指南：</strong><br>
+               1. 点击两侧的 🔊 图标播放声音。<br>
+               2. 请务必<strong>听完两个音频</strong>（点击两个喇叭），并等待最后一段音频<strong>播放结束</strong>。<br>
+               3. 若认为来自<strong>同一人</strong>，请按 <strong>F</strong> 键。<br>
+               4. 若认为<strong>不是</strong>，请按 <strong>J</strong> 键。<br><br>
+               </p>
             <button id="startBtn" class="btn" disabled>📀 加载音频中...</button>
         `;
         const startBtn = document.getElementById('startBtn');
