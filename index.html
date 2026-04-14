@@ -338,12 +338,15 @@
         
         // 如果已经可以按键，再点击喇叭则重置响应状态（因为最后播放的音频变了）
         if (currentTrialState.responseEnabled === true) {
-            currentTrialState.responseEnabled = false;
-            currentTrialState.alreadyEnabledForThisTrial = false;
-            updateStatusUI(false);
-            const fb = document.getElementById('feedback');
-            if (fb) fb.innerHTML = "重新播放，请等待音频结束";
-        }
+    currentTrialState.responseEnabled = false;
+    currentTrialState.alreadyEnabledForThisTrial = false;
+    // 👇 新增这一行：重置计时起点
+    currentTrialState.responseStartTime = 0; 
+    
+    updateStatusUI(false);
+    const fb = document.getElementById('feedback');
+    if (fb) fb.innerHTML = "重新播放，请等待音频结束";
+}
         
         if (!audio.paused) {
             audio.pause();
