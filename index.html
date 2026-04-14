@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>克隆语音配对实验</title>
+    <title>语音配对实验 | 单次播放</title>
     <style>
         * {
             box-sizing: border-box;
@@ -290,7 +290,7 @@
     
     function showWelcomeScreen() {
         app.innerHTML = `
-            <h1>🎧 克隆语音配对实验</h1>
+            <h1>🎧 语音配对实验</h1>
             <div class="sub">单次播放 · 不可重听</div>
             <p>每对语音中，<strong>每个音频只能播放一次</strong>。<br>
                请依次点击喇叭 🔊 听完两段，然后按 <kbd>F</kbd> (同一人) 或 <kbd>J</kbd> (不同人)。</p>
@@ -519,6 +519,7 @@
         });
         localStorage.setItem('exp1_results', JSON.stringify(results));
         localStorage.setItem('exp1_currentIndex', currentTrialIndex);
+        // 不显示反应时，只做简单提示
         document.getElementById('feedback').innerHTML = `✓ 已记录`;
         
         if (globalKeyHandler) document.removeEventListener('keydown', globalKeyHandler);
