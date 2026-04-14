@@ -519,7 +519,7 @@
         });
         localStorage.setItem('exp1_results', JSON.stringify(results));
         localStorage.setItem('exp1_currentIndex', currentTrialIndex);
-        document.getElementById('feedback').innerHTML = `✓ 已记录 (${rt}ms)`;
+        document.getElementById('feedback').innerHTML = `✓ 已记录`;
         
         if (globalKeyHandler) document.removeEventListener('keydown', globalKeyHandler);
         cleanupTrialAudioListeners();
